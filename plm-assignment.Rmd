@@ -1,0 +1,77 @@
+---
+title: "Practical Machine Learning"
+author: "Kang Junmo"
+date: "March 4, 2016"
+output: html_document
+---
+
+# 1.Introduce
+* Goal: predict the manner in which they did the exercise
+* Data: 
+train: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+test: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+* Required Packege: caret, random Forest
+
+# 2. Getting and Cleaning Data Set
+  
+From the lecture, First, we're going to get the data from url.  
+```{r}
+set.seed(1234)
+library(caret)
+# set the url
+train_url <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+# load data from the url
+tr_raw <- read.csv(url(train_url), na.strings=c("NA","#DIV/0!","","NULL"))
+te_raw <- read.csv(url(test_url), na.strings=c("NA","#DIV/0!","","NULL"))
+```
+  
+There seems to be so many meaningless, so discard those columns. and you can find the number reduced to about 1/3. and all these process apply testing set also.
+  
+```{r}
+dim(tr_raw); dim(te_raw);
+NAs_tr <- apply(tr_raw, 2, function(x) { sum(is.na(x)) })
+NAs_te <- apply(te_raw, 2, function(x) { sum(is.na(x)) })
+tr_cld <- subset(tr_raw[, which(NAs_tr == 0)],
+                    select=-c(X, user_name, new_window, num_window, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp))
+te_cld <- subset(te_raw[, which(NAs_te == 0)], 
+                    select=-c(X, user_name, new_window, num_window, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp))
+dim(tr_cld); dim(te_cld);
+```
+  
+# 3. Training Data: By using Random Forest Model
+  
+We fit a predictive model using **Random Forest* model, because it selects importants automatically and robusts to correlated covariates & outliers. It spend about 5 min. And we will use *4-fold cross validaton* Before train the data, we split the cleaned traing data by `p=0.7`.  
+```{r}
+library(randomForest)
+# Split the data
+inTrain <- createDataPartition(tr_cld$classe, p = 0.7, list = FALSE)
+tr <- tr_cld[inTrain, ]
+te <- tr_cld[-inTrain, ]
+# train the data by Random Forest model
+rf_ctrl <- trainControl(allowParallel = TRUE, method="cv", number = 4)
+model <- train(classe ~ ., data = tr, model ="rf", trControl  = rf_ctrl)
+model
+```
+
+Let's estimate te performance of the model
+```{r}
+pred <- predict(model, newdata = te)
+acc <- postResample(pred, te$classe)
+oose <- (1 - as.numeric(confusionMatrix(te$classe, pred)$overall[1]))
+confusionMatrix(te$classe, pred)
+```
+  
+# 4. Result
+the estimated accuracy of the model is `r I(acc)` and the estimated out-of-sample error is `r I(oose)`
+  
+```{r}
+result <- predict(model, te_cld[, -length(names(te_cld))])
+result
+```
+  
+# Appendix: the Accuracy plot  
+```{r}
+plot(model, log = "y", lwd = 4, main = "Accuracy of Random forest Model", xlab = "Predictors", 
+    ylab = "Accuracy")
