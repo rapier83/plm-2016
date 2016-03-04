@@ -8,13 +8,15 @@ output: html_document
 # 1.Introduce
 * Goal: predict the manner in which they did the exercise
 * Data: 
-train: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
-test: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+* train: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+* test: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 * Required Packege: caret, random Forest
+* Github Link : https://github.com/rapier83/plm-2016/blob/master/plm-assignment.Rmd  
 
 # 2. Getting and Cleaning Data Set
   
 From the lecture, First, we're going to get the data from url.  
+
 ```{r}
 set.seed(1234)
 library(caret)
